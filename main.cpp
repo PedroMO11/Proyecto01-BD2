@@ -2,23 +2,34 @@
 #include "SequentialFile.h"
 
 int main(){
-    VariableRecordFile file1("data.bin");
+    SequentialFile file1("data.bin");
 
     Record Matricula1{"201910111",1,100,"Ninguna"};
-    Record Matricula2{"201910112",2,200,"Hubo descuento"};
-    Record Matricula3{"20191011",3,300,"Pagado una parte"};
-    Record Matricula4{"201910114",4,400,"Pagado"};
-    Record Matricula5{"201910115",5,500,"Falta pago"};
+    Record Matricula2{"201910110",2,200,"Hubo descuento"};
+//    Record Matricula3{"20191011",3,300,"Pagado una parte"};
+//    Record Matricula4{"201910114",4,400,"Pagado"};
+//    Record Matricula5{"201910115",5,500,"Falta pago"};
+//
+//    file1.add(Matricula1);
+//    file1.add(Matricula2);
+//    file1.add(Matricula3);
+//    file1.add(Matricula4);
+//    file1.add(Matricula5);
+//
+//    fstream aux("data.bin", ios::binary | ios::in | ios::out | ios::app);
+//    aux.seekg(0, ios::beg);
+//    cout<<aux.tellg()<<endl;
+//    size_t temp;
+//
+//    aux.read((char*)&temp, sizeof(size_t));
+//    cout<<aux.tellg()<<endl;
+//    cout<<temp<<endl;
+//    aux.close();
 
-    file1.add(Matricula1);
-    file1.add(Matricula2);
-    file1.add(Matricula3);
-    file1.add(Matricula4);
-    file1.add(Matricula5);
-////
 //    Record matricula = file1.readRecord(1);
 //    matricula.showData();
 //    cout<<endl;
+    file1.show_all_data();
 
 //    vector<Record> v_matricula = file1.load();
 //    for(auto & i : v_matricula) {
