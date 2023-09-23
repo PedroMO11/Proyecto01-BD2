@@ -4,22 +4,31 @@
 int main(){
     SequentialFile file1("data.bin");
 
-    Record Matricula1{"201910111",1,100,"Ninguna"};
-    Record Matricula2{"201910110",2,200,"Hubo descuento"};
-//    Record Matricula3{"20191011",3,300,"Pagado una parte"};
-//    Record Matricula4{"201910114",4,400,"Pagado"};
-//    Record Matricula5{"201910115",5,500,"Falta pago"};
+    Record Matricula1{"201910110",1,100,"Ninguna"};
+    Record Matricula2{"201910112",2,200,"Hubo descuento"};
+    Record Matricula3{"201910119",3,300,"Pagado una parte"};
+    Record Matricula4{"201910113",4,400,"Pagado"};
+    Record Matricula5{"201910114",5,500,"Falta pago"};
+
+    file1.add(Matricula4);//201910113
+    file1.add(Matricula2);//201910112
+    file1.add(Matricula5);//201910114
+    file1.add(Matricula3);
+    // file1.add(Matricula4);
+    // file1.add(Matricula1);
+    // file1.add(Matricula3);
+
+    // file1.add(Matricula1);
+    // file1.add(Matricula5);
+    // file1.add(Matricula4);
+    // file1.add(Matricula2);
+    // file1.add(Matricula3);
 //
-//    file1.add(Matricula1);
-//    file1.add(Matricula2);
-//    file1.add(Matricula3);
-//    file1.add(Matricula4);
-//    file1.add(Matricula5);
-//
-//    fstream aux("data.bin", ios::binary | ios::in | ios::out | ios::app);
-//    aux.seekg(0, ios::beg);
-//    cout<<aux.tellg()<<endl;
-//    size_t temp;
+   fstream aux("aux.bin", ios::binary | ios::in | ios::out | ios::app);
+   aux.seekg(0, ios::end);
+   cout<<"main_aux_n: "<<aux.tellg()<<endl;
+   aux.close();
+
 //
 //    aux.read((char*)&temp, sizeof(size_t));
 //    cout<<aux.tellg()<<endl;
@@ -28,8 +37,16 @@ int main(){
 
 //    Record matricula = file1.readRecord(1);
 //    matricula.showData();
-//    cout<<endl;
-    file1.show_all_data();
+    fstream cabecera("data.bin", ios::binary | ios::in | ios::out | ios::app);
+    cabecera.seekg(4, ios::beg);
+    size_t temp;
+    cabecera.read((char*)&temp, sizeof(size_t));
+    
+    cout<<endl<<endl;
+    cout<<"Impresion del archivo aux.bin: "<<endl;
+    cout<<"--------------------------------"<<endl<<endl;
+    cout<<"Puntero de cabecera: "<<temp<<endl<<endl;
+    file1.Imprimir_aux_bin();
 
 //    vector<Record> v_matricula = file1.load();
 //    for(auto & i : v_matricula) {
