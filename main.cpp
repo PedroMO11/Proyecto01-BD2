@@ -12,9 +12,9 @@ int main(){
 
     file1.add(Matricula4);//201910113
     file1.add(Matricula2);//201910112
-    file1.add(Matricula5);//201910114
-    file1.add(Matricula3);
-    // file1.add(Matricula4);
+    // file1.add(Matricula5);//201910114
+    // file1.add(Matricula3);
+    // file1.add(Matricula1);
     // file1.add(Matricula1);
     // file1.add(Matricula3);
 
@@ -24,29 +24,27 @@ int main(){
     // file1.add(Matricula2);
     // file1.add(Matricula3);
 //
-   fstream aux("aux.bin", ios::binary | ios::in | ios::out | ios::app);
-   aux.seekg(0, ios::end);
-   cout<<"main_aux_n: "<<aux.tellg()<<endl;
-   aux.close();
-
-//
-//    aux.read((char*)&temp, sizeof(size_t));
-//    cout<<aux.tellg()<<endl;
-//    cout<<temp<<endl;
-//    aux.close();
-
-//    Record matricula = file1.readRecord(1);
-//    matricula.showData();
-    fstream cabecera("data.bin", ios::binary | ios::in | ios::out | ios::app);
-    cabecera.seekg(4, ios::beg);
-    size_t temp;
-    cabecera.read((char*)&temp, sizeof(size_t));
+    // fstream aux("aux.bin", ios::binary | ios::in | ios::out | ios::app);
+    // aux.seekg(0, ios::end);
+    // cout<<"main_aux_n: "<<aux.tellg()<<endl;
+    // aux.close();
     
+    // cout<<endl<<endl;
+    // cout<<"Impresion del archivo aux.bin: "<<endl;
+    // cout<<"--------------------------------"<<endl<<endl;
+    // cout<<"Puntero de cabecera: "<<temp<<endl<<endl;
+    // file1.Imprimir_aux_bin();
+
+    // cout<<endl<<endl;
+    // cout<<"Impresion de toda la data ordenada: "<<endl;
+    // cout<<"--------------------------------"<<endl<<endl;
+    // file1.show_all_data_ordered_by_pointer();
+    // cout<<endl;
+
     cout<<endl<<endl;
-    cout<<"Impresion del archivo aux.bin: "<<endl;
+    cout<<"Impresion del archivo data.bin: "<<endl;
     cout<<"--------------------------------"<<endl<<endl;
-    cout<<"Puntero de cabecera: "<<temp<<endl<<endl;
-    file1.Imprimir_aux_bin();
+    file1.show_all_data_ordered_by_pointer();
 
 //    vector<Record> v_matricula = file1.load();
 //    for(auto & i : v_matricula) {

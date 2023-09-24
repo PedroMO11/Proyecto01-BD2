@@ -9,7 +9,6 @@
 #include <vector>
 #include <cstring>
 
-
 using namespace std;
 
 struct Record{
@@ -97,19 +96,7 @@ struct Record{
         cout<<"next esta en data?: "<<punt_next_is_In_Data<<endl;
     }
 };
-//class SequentialFile {
-//    string filename;
-//
-//public:
-//    explicit SequentialFile(string filename) {
-//        this->filename = filename;
-//        VariableRecordFile file(filename);
-//    }
-//
-//
-//
-//
-//};
+
 class SequentialFile {
 private:
     string filename;
@@ -158,73 +145,107 @@ public:
 
             if(n_data == 0){//En data.bin no hay datos
                 //Debo insertarlo en aux.bin, pero debo insertar records hasta llegar a n_aux=2, para luego reinsertarlos ordenadamente en data.bin
-                aux.seekp(0, ios::beg);//Nos movemos al inicio del archivo
-                aux.read(reinterpret_cast<char *>(&n_aux), sizeof(n_aux));
-                cout<<n_aux<<" "<<n_data<<endl;
-
-                if(n_aux==2){
-                    //función insertar en data de manera ordenada
-                }
 
                 insert_heap_record(record);
                 
-
+                aux.seekp(0, ios::beg);//Nos movemos al inicio del archivo
+                aux.read(reinterpret_cast<char *>(&n_aux), sizeof(n_aux));
+                cout<<n_aux<<" "<<n_data<<endl;
                 
-                ////////////////////////////////
-                // Record temp;
-                // size_t temp_tamReg;
+                if(n_aux==2){
+                    cout<<"Ya hay 2 en aux:"<<endl;
+                    InsertAllDataFromAuxToData(n_aux);//paso la cantidad de registros que hay en aux.bin y agregaré a data.bin
+                }
 
-                // //Obtengo el record de aux.bin
-                // aux.seekg(sizeof(size_t), ios::beg);//Me coloco después de la metadata en aux
-                // aux.read(reinterpret_cast<char *>(&temp_tamReg), sizeof(temp_tamReg));
-                // aux.seekg(sizeof(size_t), ios::beg);
-
-                // char *buffer = new char[temp_tamReg];//Creamos un buffer del tamaño del registro que vamos a leer.
-                // aux.read(buffer, temp_tamReg); //Leemos el registro que queremos leer en el buffer de tamaño tam_reg.
-                // temp.desempaquetar(buffer, temp_tamReg);//Desempaquetamos el buffer, asignamos los valores al record.
-                // delete[] buffer;//Liberamos la memoria del buffer
-
-                // ofstream aux_out("aux.bin", ios::binary | ios::out | ios::in);//Me asegura que escribo al final de la data
-                // aux_out.seekp(0, ios::beg);
-                // n_aux = 0;
-                // aux_out.write(reinterpret_cast<char *>(&n_aux), sizeof(n_aux));
-                // for(int i=0;i<temp_tamReg;i++) aux_out.put(0);//Borramos el registro de aux.bin
-                // aux_out.close();
-
-//                aux.seekg(0, ios::end);
-//                file.seekg(0, ios::end);
-//                cout<<file.tellg()<<" "<<aux.tellg(); //todo bien hasta aqui
-                // if(record.Codigo < temp.Codigo) {
-                //     metadata_nextPosFisica = sizeof(n_data)+sizeof(metadata_nextPosFisica)+sizeof(metadata_next_is_In_Data);
-                //     metadata_next_is_In_Data = true;
-                //     file_out.write(reinterpret_cast<char *>(&metadata_nextPosFisica), sizeof(metadata_nextPosFisica));
-                //     file_out.write(reinterpret_cast<char *>(&metadata_next_is_In_Data), sizeof(bool));
-
-                //     //Escribimos el record en data.bin
-                //     record.punt_nextPosFisica=((size_t)file_out.tellg() + record.size_of());
-                //     cout<<file_out.tellg()<<" - "<<record.size_of()<<endl;
-                //     record.punt_next_is_In_Data = true;
-                //     auto buffer_record = record.empaquetar();
-                //     file_out.write(buffer_record, record.size_of());//escribimos el record en el archivo
-                //     delete[] buffer_record;//liberamos la memoria del buffer
-                //     aux.seekg(0, ios::end);
-                //     file_out.seekg(0, ios::end);
-                //     aux.seekg(0, ios::end);
-                //     file_out.seekg(0, ios::end);
-
-                //     //Escribimos el temp en data.bin
-                //     auto buffer_temp = temp.empaquetar();
-                //     file_out.write(buffer_temp, temp.size_of());//escribimos el record en el archivo
-                //     delete[] buffer_temp;//liberamos la memoria del buffer
-                //     file_out.seekg(0,ios::end);
-                // }
+            }else{
+                
             }
             // file_out.close();
         }
         aux.close();//cerramos el archivo
         file.close();
+
+        //Si existe "temp.bin" entonces ya se ordenó la data, por lo que procedemos a eliminar el archivo original con data vieja y renombrar el archivo temporal como data.bin
+        ifstream file2("temp.bin", ios::binary);
+        if(file2.is_open()){
+            std::remove("data.bin");  // Elimina el archivo original
+            file2.close();
+            std::rename("temp.bin", "data.bin");
+        }else{
+            cout<<"Aun no se ordena la data"<<endl;
+            file2.close();
+        }
+
+
         return true;
     }
+
+    void InsertAllDataFromAuxToData(size_t & n_extra_data){
+        //Creo un archivo donde inserto toda la data ordenada
+        fstream outputFile("temp.bin", std::ios::binary | ios::app);
+        ifstream aux("aux.bin", std::ios::binary);
+        ifstream file(filename, std::ios::binary);
+        if (!aux.is_open()) {cerr << "No se pudo abrir el archivo aux.bin"<<endl;}
+        if (!outputFile.is_open()) {cerr << "No se pudo abrir el archivo temp.bin"<<endl;}
+        if (!file.is_open()) {cerr << "No se pudo abrir el archivo "+filename<<endl;}
+
+        cout<<"cursor: "<<file.tellg()<<" "<<aux.tellg()<<" "<<outputFile.tellg()<<endl;
+
+        size_t flag_next_punt, tam_reg, n_aux, n_data;
+        bool flag_next_is_in_data;
+
+        //Leemos la metadata de ambos archivos y escribimos la metada de data.bin en temp.bin
+        file.read(reinterpret_cast<char *>(&n_data), sizeof(n_data));
+        file.read(reinterpret_cast<char *>(&flag_next_punt), sizeof(flag_next_punt));
+        file.read(reinterpret_cast<char *>(&flag_next_is_in_data), sizeof(flag_next_is_in_data));
+
+        n_data += n_extra_data;
+        outputFile.write(reinterpret_cast<char *>(&n_data), sizeof(n_data));
+        outputFile.write(reinterpret_cast<char *>(&flag_next_punt), sizeof(flag_next_punt));
+        outputFile.write(reinterpret_cast<char *>(&flag_next_is_in_data), sizeof(flag_next_is_in_data));
+
+        aux.read(reinterpret_cast<char *>(&n_aux), sizeof(n_aux));
+
+        while(flag_next_punt!=-1){
+            if(flag_next_is_in_data){
+                file.seekg(flag_next_punt, ios::beg);//Queremos la metadata posición fisica del siguiente registro
+                file.read(reinterpret_cast<char *>(&tam_reg), sizeof(tam_reg));//Leemos el tamaño del record
+                file.seekg(-((int)sizeof(tam_reg)),ios::cur);
+                char *buffer = new char[tam_reg];//Creamos un buffer del tamaño del registro que vamos a leer.
+                file.read(buffer, tam_reg); //Leemos el registro que queremos leer en el buffer de tamaño tam_reg.
+                outputFile.seekg(0, ios::end);
+                outputFile.write(buffer, tam_reg);//escribimos el record en el archivo
+                delete[] buffer;//liberamos la memoria del buffer
+
+                //Actualizamos la metadata: flag_punt_next y flag_punt_is_in_data
+                file.seekg(-((int)sizeof(flag_next_is_in_data)+(int)sizeof(flag_next_punt)),ios::cur);
+                file.read(reinterpret_cast<char*>(&flag_next_punt), sizeof(flag_next_punt));//Leemos la posición física del registro que queremos leer.
+                file.read(reinterpret_cast<char*>(&flag_next_is_in_data), sizeof(flag_next_is_in_data));
+            }else{
+                aux.seekg(flag_next_punt, ios::beg);//Queremos la metadata posición fisica del siguiente registro
+                aux.read(reinterpret_cast<char *>(&tam_reg), sizeof(tam_reg));//Leemos el tamaño del record
+                aux.seekg(-((int)sizeof(tam_reg)),ios::cur);
+                char *buffer = new char[tam_reg];//Creamos un buffer del tamaño del registro que vamos a leer.
+                aux.read(buffer, tam_reg); //Leemos el registro que queremos leer en el buffer de tamaño tam_reg.
+                outputFile.seekg(0, ios::end);
+                outputFile.write(buffer, tam_reg);//escribimos el record en el archivo
+                delete[] buffer;//liberamos la memoria del buffer
+
+                //Actualizamos la metadata: flag_punt_next y flag_punt_is_in_data
+                aux.seekg(-((int)sizeof(flag_next_is_in_data)+(int)sizeof(flag_next_punt)),ios::cur);
+                aux.read(reinterpret_cast<char*>(&flag_next_punt), sizeof(flag_next_punt));//Leemos la posición física del registro que queremos leer.
+                aux.read(reinterpret_cast<char*>(&flag_next_is_in_data), sizeof(flag_next_is_in_data));
+
+            }
+        }
+        //Cerramos archivos
+        file.close();
+        aux.close();
+        outputFile.close();
+        
+
+    }
+
     void insert_heap_record(Record& record){
         fstream aux_out("aux.bin", std::ios::binary | ios::out | ios::in );
         if (!aux_out.is_open()) {cerr << "No se pudo abrir el archivo aux.dat"<<endl;}
@@ -253,30 +274,12 @@ public:
         size_t flag_before_PosFisica = 0;
         bool flag_before_is_in_data = true;
         size_t flag_before_tamReg = 0;
+        Record temp;
 
 
         while(flag_punt_nextPosFisica!=-1){
             if(flag_punt_is_in_data) {
-                // fm.seekg(temp_punt_next, ios::beg);//Queremos la metadata posición fisica del siguiente registro
-
-                // fm.read(reinterpret_cast<char *>(&tam_reg), sizeof(tam_reg));//Leemos el tamaño del record
-
-                // fm.seekg(-((int)sizeof(tam_reg)),ios::cur);
-                // char *buffer = new char[tam_reg];//Creamos un buffer del tamaño del registro que vamos a leer.
-                // fm.read(buffer, tam_reg); //Leemos el registro que queremos leer en el buffer de tamaño tam_reg.
-
-                // //Actualizamos la metadata: flag_punt_next y flag_punt_is_in_data
-
-                // fm.seekg(-((int)sizeof(size_t)+(int)sizeof(bool)),ios::cur);
-
-                // fm.read(reinterpret_cast<char*>(&temp_punt_next), sizeof(temp_punt_next));//Leemos la posición física del registro que queremos leer.
-                // fm.read(reinterpret_cast<char*>(&flag_punt_is_in_data), sizeof(flag_punt_is_in_data));
-
-                // temp.desempaquetar(buffer, tam_reg);//Desempaquetamos el buffer, asignamos los valores al record.
-                // delete[] buffer;//Liberamos la memoria del buffer
-                // temp.showData();
             }else{
-                Record temp;
                 aux_out.seekg(flag_punt_nextPosFisica, ios::beg);//Voy al siguiente registro
                 cout<<"Entro aux_bin: "<<file_out.tellg()<<" - "<<aux_out.tellg()<<endl;
                 aux_out.read(reinterpret_cast<char *>(&temp_tamReg), sizeof(temp_tamReg));//Leemos el tamaño del record
@@ -438,99 +441,108 @@ public:
 //        delete [] buffer;//Liberamos la memoria del buffer
 //        return record;
 //    }
-    void Imprimir_aux_bin(){
-        ifstream aux("aux.bin", ios::binary);
-        if(!aux.is_open()) throw ("No se pudo abrir el archivo");
-        size_t n_aux;
-        aux.read(reinterpret_cast<char*>(&n_aux), sizeof(n_aux));
+    void Imprimir_file(string filename){
+        ifstream file(filename, ios::binary);
+        if(!file.is_open()) throw ("No se pudo abrir el archivo");
+        size_t n_file;
 
-        if(n_aux == 0){
-            cout<<"No hay registros en aux.bin"<<endl;
+        file.seekg(0, ios::beg);
+        file.read(reinterpret_cast<char*>(&n_file), sizeof(n_file));
+
+        if(n_file == 0){
+            cout<<"No hay registros en " <<filename<<endl;
             return;
         }
         size_t tam_reg;
         Record temp;
-        aux.seekg(sizeof(n_aux), ios::beg);//Me coloco después d vcbxe la metadata
-        cout<<"Tamanio de regitros en el archivo: "<<n_aux<<endl<<endl;
-        while(n_aux > 0){
-            aux.read(reinterpret_cast<char *>(&tam_reg), sizeof(tam_reg));//Leemos el tamaño del record
+        cout<<"Tamanio de regitros en el archivo "<<filename<<": "<<n_file<<endl<<endl;
+
+        if(filename != "aux.bin") {
+            file.seekg(sizeof(size_t)+sizeof(bool),ios::cur);
+        }
+
+        while(n_file > 0){
+            file.read(reinterpret_cast<char *>(&tam_reg), sizeof(tam_reg));//Leemos el tamaño del record
             char *buffer = new char[tam_reg];//Creamos un buffer del tamaño del registro que vamos a leer.
-            aux.seekg(-((int)sizeof(tam_reg)),ios::cur);
-            aux.read(buffer, tam_reg); //Leemos el registro que queremos leer en el buffer de tamaño tam_reg
+            file.seekg(-((int)sizeof(tam_reg)),ios::cur);
+            file.read(buffer, tam_reg); //Leemos el registro que queremos leer en el buffer de tamaño tam_reg
             temp.desempaquetar(buffer, tam_reg);//Desempaquetamos el buffer, asignamos los valores al record.
             delete[] buffer;//Liberamos la memoria del buffer
             temp.showData();
             cout<<endl;
             cout<<"\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"<<endl;
             cout<<endl;
-            n_aux--;
+            n_file--;
         }
 
-        aux.close();
+        file.close();
     }
     void show_all_data_ordered_by_pointer(){
         ifstream fm(filename, ios::binary);
         ifstream aux("aux.bin", ios::binary);
         if(!fm.is_open()) throw ("No se pudo abrir el archivo");
-        size_t temp_punt_next=0;
+        if(!aux.is_open()) throw ("No se pudo abrir el archivo");
+
+        size_t flag_punt_next=0;
         bool flag_punt_is_in_data;
         size_t tam_reg;
         size_t n_aux;
         size_t n_data;
         Record temp;
-
+        
         fm.read(reinterpret_cast<char*>(&n_data), sizeof(n_data));
-        fm.read(reinterpret_cast<char*>(&temp_punt_next), sizeof(temp_punt_next));
+        fm.read(reinterpret_cast<char*>(&flag_punt_next), sizeof(flag_punt_next));
         fm.read(reinterpret_cast<char*>(&flag_punt_is_in_data), sizeof(flag_punt_is_in_data));
         aux.read(reinterpret_cast<char*>(&n_aux), sizeof(n_aux));
+
+        if(n_data == 0)cout<<"No hay registros en data.bin"<<endl;
+        if(n_aux == 0) cout<<"No hay registros en aux.bin"<<endl;
+        if(n_data == 0 && n_aux == 0) return;
+
+        cout<<"Tamanio de regitros en el archivo: "<<n_data+n_aux<<endl;
+        cout<<"Tamanio de regitros en data.bin: "<<n_data<<endl;
+        cout<<"Tamanio de regitros en aux.bin: "<<n_aux<<endl<<endl;
+        cout<<"----------------------------------"<<endl<<endl;
+
+        while(flag_punt_next!=-1){
+            if(flag_punt_is_in_data){
+                fm.seekg(flag_punt_next, ios::beg);//Queremos la metadata posición fisica del siguiente registro
+                fm.read(reinterpret_cast<char *>(&tam_reg), sizeof(tam_reg));//Leemos el tamaño del record
+                fm.seekg(-((int)sizeof(tam_reg)),ios::cur);
+                char *buffer = new char[tam_reg];//Creamos un buffer del tamaño del registro que vamos a leer.
+                fm.read(buffer, tam_reg); //Leemos el registro que queremos leer en el buffer de tamaño tam_reg.
+                temp.desempaquetar(buffer, tam_reg);//Desempaquetamos el buffer, asignamos los valores al record.
+                delete[] buffer;//Liberamos la memoria del buffer
+                temp.showData();
+                cout<<endl;
+                cout<<"\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"<<endl;
+                cout<<endl;
+                fm.seekg(-((int)sizeof(flag_punt_next))-((int)sizeof(flag_punt_is_in_data)),ios::cur);
+                fm.read(reinterpret_cast<char*>(&flag_punt_next), sizeof(flag_punt_next));//Leemos la posición física del registro que queremos leer.
+                fm.read(reinterpret_cast<char*>(&flag_punt_is_in_data), sizeof(flag_punt_is_in_data));
+
+            }else{
+                aux.seekg(flag_punt_next, ios::beg);//Queremos la metadata posición fisica del siguiente registro
+                aux.read(reinterpret_cast<char *>(&tam_reg), sizeof(tam_reg));//Leemos el tamaño del record
+                aux.seekg(-((int)sizeof(tam_reg)),ios::cur);
+                char *buffer = new char[tam_reg];//Creamos un buffer del tamaño del registro que vamos a leer.
+                aux.read(buffer, tam_reg); //Leemos el registro que queremos leer en el buffer de tamaño tam_reg.
+                temp.desempaquetar(buffer, tam_reg);//Desempaquetamos el buffer, asignamos los valores al record.
+                delete[] buffer;//Liberamos la memoria del buffer
+                temp.showData();
+                cout<<endl;
+                cout<<"\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"<<endl;
+                cout<<endl;
+                aux.seekg(-((int)sizeof(flag_punt_next))-((int)sizeof(flag_punt_is_in_data)),ios::cur);
+                aux.read(reinterpret_cast<char*>(&flag_punt_next), sizeof(flag_punt_next));//Leemos la posición física del registro que queremos leer.
+                aux.read(reinterpret_cast<char*>(&flag_punt_is_in_data), sizeof(flag_punt_is_in_data));
+            }
+        }
 
 //        fm.seekg(0,ios::end);//Queremos la metadata posición fisica del siguiente registro
 //        cout<<fm.tellg()<<endl;
 
-        while(temp_punt_next != -1){
-            if(flag_punt_is_in_data) {
-                fm.seekg(temp_punt_next, ios::beg);//Queremos la metadata posición fisica del siguiente registro
-
-                fm.read(reinterpret_cast<char *>(&tam_reg), sizeof(tam_reg));//Leemos el tamaño del record
-
-                fm.seekg(-((int)sizeof(tam_reg)),ios::cur);
-                char *buffer = new char[tam_reg];//Creamos un buffer del tamaño del registro que vamos a leer.
-                fm.read(buffer, tam_reg); //Leemos el registro que queremos leer en el buffer de tamaño tam_reg.
-
-                //Actualizamos la metadata: flag_punt_next y flag_punt_is_in_data
-
-                fm.seekg(-((int)sizeof(size_t)+(int)sizeof(bool)),ios::cur);
-
-                fm.read(reinterpret_cast<char*>(&temp_punt_next), sizeof(temp_punt_next));//Leemos la posición física del registro que queremos leer.
-                fm.read(reinterpret_cast<char*>(&flag_punt_is_in_data), sizeof(flag_punt_is_in_data));
-
-                temp.desempaquetar(buffer, tam_reg);//Desempaquetamos el buffer, asignamos los valores al record.
-                delete[] buffer;//Liberamos la memoria del buffer
-                temp.showData();
-            }else{
-                if(n_aux == 0){
-                    cout<<"No hay registros en aux.bin"<<endl;
-                    break;
-                }
-                aux.seekg(sizeof(n_aux), ios::beg);//Me coloco después d vcbxe la metadata
-                aux.read(reinterpret_cast<char *>(&tam_reg), sizeof(tam_reg));//Leemos el tamaño del record
-
-                char *buffer = new char[tam_reg];//Creamos un buffer del tamaño del registro que vamos a leer.
-                aux.seekg(-((int)sizeof(tam_reg)),ios::cur);
-
-                aux.read(buffer, tam_reg); //Leemos el registro que queremos leer en el buffer de tamaño tam_reg
-                temp.desempaquetar(buffer, tam_reg);//Desempaquetamos el buffer, asignamos los valores al record.
-                //Actualizamos la metadata: flag_punt_next y flag_punt_is_in_data
-                temp_punt_next = temp.punt_nextPosFisica;
-                flag_punt_is_in_data = temp.punt_next_is_In_Data;
-
-                delete[] buffer;//Liberamos la memoria del buffer
-                temp.showData();
-            }
-            cout<<endl;
-            cout<<"\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"<<endl;
-            cout<<endl;
-        }
+        cout<<"Posicion actual: "<<fm.tellg()<<" - "<<aux.tellg()<<endl;
         aux.close();
         fm.close();
     }
